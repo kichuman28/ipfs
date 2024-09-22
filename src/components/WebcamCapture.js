@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Webcam from 'react-webcam';
 import { motion } from 'framer-motion';
-import { Camera, RotateCcw, Upload, Send, Eye, RefreshCw } from 'lucide-react';
+import { Camera, RotateCcw, Upload, Send, Eye, RefreshCw, MapPin } from 'lucide-react';
 import Modal from './Modal';
 import { pinata } from '../utils/config';
 import { ethers } from 'ethers';
@@ -17,9 +17,36 @@ function WebcamCapture({ walletAddress, signer }) {
   const [isUploading, setIsUploading] = useState(false);
   const [isUploaded, setIsUploaded] = useState(false);
   const [description, setDescription] = useState('');
+  const [location, setLocation] = useState('');
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
 
   const videoConstraints = {
     facingMode: isFrontCamera ? 'user' : { exact: 'environment' },
+  };
+
+  useEffect(() => {
+    getLocation();
+  }, []);
+
+  const getLocation = () => {
+    setIsGettingLocation(true);
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setLocation(`${latitude}, ${longitude}`);
+          setIsGettingLocation(false);
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          setLocation("Location unavailable");
+          setIsGettingLocation(false);
+        }
+      );
+    } else {
+      setLocation("Geolocation not supported");
+      setIsGettingLocation(false);
+    }
   };
 
   const capture = useCallback(() => {
@@ -57,7 +84,7 @@ function WebcamCapture({ walletAddress, signer }) {
     if (!uploadUrl) return;
     try {
       const contract = new ethers.Contract(contractAddress, contractABI, signer);
-      const tx = await contract.submitReport(description, "Report Location", uploadUrl);
+      const tx = await contract.submitReport(description, location, uploadUrl);
       await tx.wait();
       console.log("Report submitted successfully!");
       // You might want to add some state here to show a success message
@@ -75,6 +102,7 @@ function WebcamCapture({ walletAddress, signer }) {
     setIsWebcamOn(true);
     setIsUploaded(false);
     setDescription('');
+    getLocation(); // Refresh location when recapturing
   };
 
   return (
@@ -122,6 +150,33 @@ function WebcamCapture({ walletAddress, signer }) {
             />
           </motion.div>
 
+          <motion.div
+            className="w-full"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+          >
+            <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
+              Location
+            </label>
+            <div className="flex items-center">
+              <input
+                type="text"
+                id="location"
+                className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md p-2"
+                value={location}
+                readOnly
+              />
+              <button
+                onClick={getLocation}
+                className="ml-2 p-2 bg-indigo-100 rounded-md"
+                disabled={isGettingLocation}
+              >
+                <MapPin className={`text-indigo-600 ${isGettingLocation ? 'animate-spin' : ''}`} size={20} />
+              </button>
+            </div>
+          </motion.div>
+
           {!isUploaded && (
             <motion.button
               className={`bg-indigo-600 hover:bg-indigo-700 px-6 py-3 rounded-full text-white w-full flex items-center justify-center ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -145,15 +200,6 @@ function WebcamCapture({ walletAddress, signer }) {
               >
                 <Send className="mr-2" size={20} />
                 Submit Report
-              </motion.button>
-              <motion.button
-                className="bg-blue-500 hover:bg-blue-600 px-6 py-3 rounded-full text-white w-full flex items-center justify-center"
-                onClick={() => setIsModalOpen(true)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Eye className="mr-2" size={20} />
-                View IPFS URL
               </motion.button>
             </>
           )}
