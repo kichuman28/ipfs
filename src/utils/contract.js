@@ -125,6 +125,19 @@ const contractABI = [
 		"type": "function"
 	},
 	{
+		"inputs": [],
+		"name": "reportCount",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "uint256",
@@ -223,9 +236,8 @@ const contractABI = [
 		"stateMutability": "payable",
 		"type": "receive"
 	}
-];
-  
-  const contractAddress = '0xc0d1d54030f939d8697f9b38b8c0d8b413c13236'; // Replace with your actual contract address
+]
+  const contractAddress = '0x6a21720008e675160741608a848494d6eca98602';
   
   export { contractABI, contractAddress };
   

@@ -15,7 +15,8 @@ function WebcamCapture({ walletAddress, signer }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFrontCamera, setIsFrontCamera] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
-  const [isUploaded, setIsUploaded] = useState(false); // Track upload status
+  const [isUploaded, setIsUploaded] = useState(false);
+  const [description, setDescription] = useState('');
 
   const videoConstraints = {
     facingMode: isFrontCamera ? 'user' : { exact: 'environment' },
@@ -44,7 +45,7 @@ function WebcamCapture({ walletAddress, signer }) {
       const result = uploadResponse.data;
       const ipfsUrl = `https://gateway.pinata.cloud/ipfs/${result.IpfsHash}`;
       setUploadUrl(ipfsUrl);
-      setIsUploaded(true); // Mark as uploaded
+      setIsUploaded(true);
     } catch (error) {
       console.error('Error uploading file to IPFS:', error);
     } finally {
@@ -56,9 +57,10 @@ function WebcamCapture({ walletAddress, signer }) {
     if (!uploadUrl) return;
     try {
       const contract = new ethers.Contract(contractAddress, contractABI, signer);
-      const tx = await contract.submitReport("Report Description", "Report Location", uploadUrl);
+      const tx = await contract.submitReport(description, "Report Location", uploadUrl);
       await tx.wait();
       console.log("Report submitted successfully!");
+      // You might want to add some state here to show a success message
     } catch (error) {
       console.error("Error submitting report:", error);
     }
@@ -71,7 +73,8 @@ function WebcamCapture({ walletAddress, signer }) {
   const handleRecapture = () => {
     setCapturedImage(null);
     setIsWebcamOn(true);
-    setIsUploaded(false); // Reset upload status for new capture
+    setIsUploaded(false);
+    setDescription('');
   };
 
   return (
@@ -99,8 +102,27 @@ function WebcamCapture({ walletAddress, signer }) {
           transition={{ delay: 0.3 }}
         >
           <img src={capturedImage} alt="Captured" className="mb-4 w-full rounded-lg shadow-lg" />
+          
+          <motion.div
+            className="w-full"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+              Fill Description
+            </label>
+            <textarea
+              id="description"
+              rows="3"
+              className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 mt-1 block w-full sm:text-sm border border-gray-300 rounded-md p-2"
+              placeholder="Describe the captured evidence..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </motion.div>
 
-          {!isUploaded && ( // Conditionally render upload button
+          {!isUploaded && (
             <motion.button
               className={`bg-indigo-600 hover:bg-indigo-700 px-6 py-3 rounded-full text-white w-full flex items-center justify-center ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
               onClick={handleUpload}
@@ -113,7 +135,7 @@ function WebcamCapture({ walletAddress, signer }) {
             </motion.button>
           )}
 
-          {isUploaded && ( // Conditionally render submit and view buttons
+          {isUploaded && (
             <>
               <motion.button
                 className="bg-green-500 hover:bg-green-600 px-6 py-3 rounded-full text-white w-full flex items-center justify-center"
