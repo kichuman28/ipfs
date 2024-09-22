@@ -113,7 +113,7 @@ function WebcamCapture({ walletAddress, signer }) {
             </motion.button>
           )}
 
-          {uploadUrl && (
+          {isUploaded && ( // Conditionally render submit and view buttons
             <>
               <motion.button
                 className="bg-green-500 hover:bg-green-600 px-6 py-3 rounded-full text-white w-full flex items-center justify-center"
